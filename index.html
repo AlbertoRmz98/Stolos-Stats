@@ -1,7 +1,64 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Stolos Stats</title><style>
-:root{color-scheme:dark;--bg:#090d14;--panel:#111925;--line:#263344;--text:#edf3fb;--muted:#93a4b9;--accent:#77e0b5}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 80% 0,#16283a,transparent 35%),var(--bg);font:15px system-ui;color:var(--text)}header{padding:28px max(20px,calc((100% - 1120px)/2));border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:20px}.logo{font-size:22px;font-weight:800;letter-spacing:.5px}.logo span{color:var(--accent)}main{max-width:1120px;margin:auto;padding:28px 20px}.hero{margin-bottom:24px}.eyebrow{color:var(--accent);text-transform:uppercase;letter-spacing:2px;font-size:12px;font-weight:700}h1{font-size:clamp(28px,5vw,42px);margin:8px 0}p{color:var(--muted);line-height:1.6}.tabs{display:flex;gap:10px;flex-wrap:wrap;margin:22px 0}.tabs button,select{background:var(--panel);color:var(--text);border:1px solid var(--line);padding:11px 16px;border-radius:10px;cursor:pointer}.tabs button.active{border-color:var(--accent);color:var(--accent)}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.card{background:linear-gradient(145deg,#131e2b,#0f1620);border:1px solid var(--line);border-radius:16px;padding:18px}.metric{font-size:28px;font-weight:800;margin-top:8px}.label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:26px 0 12px}.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:12px}table{border-collapse:collapse;width:100%;min-width:650px;background:#0e151f}th,td{text-align:left;padding:12px;border-bottom:1px solid var(--line);font-size:13px}th{color:var(--muted);font-weight:600}small,.muted{color:var(--muted)}.status{font-size:12px;color:var(--accent)}footer{max-width:1120px;margin:auto;padding:0 20px 36px;color:var(--muted);font-size:12px}@media(max-width:700px){.grid{grid-template-columns:1fr 1fr}header{align-items:flex-start;flex-direction:column}}@media(max-width:440px){.grid{grid-template-columns:1fr}}
-</style></head><body><header><div class="logo">STOLOS <span>STATS</span></div><div class="status" id="status">Preparado para cargar datos históricos</div></header><main><section class="hero"><div class="eyebrow">Sports data lab</div><h1>Decisiones basadas en datos.</h1><p>Históricos de fútbol y NFL, métricas transparentes y tendencias calculadas a partir de resultados disponibles. No son garantías de resultados.</p></section><div class="tabs"><button class="active" data-sport="football">⚽ Fútbol</button><button data-sport="nfl">🏈 NFL</button></div><div class="grid"><div class="card"><div class="label">Partidos cargados</div><div class="metric" id="matches">—</div></div><div class="card"><div class="label">Temporadas disponibles</div><div class="metric" id="seasons">—</div></div><div class="card"><div class="label">Actualización de datos</div><div class="metric" id="updated" style="font-size:18px">—</div></div></div><div class="toolbar"><div><strong id="tabletitle">Resultados históricos de fútbol</strong><p style="margin:4px 0">Muestra de partidos más recientes del archivo sincronizado.</p></div><select id="season"><option value="all">Todas las temporadas</option></select></div><div class="tablewrap"><table><thead id="thead"></thead><tbody id="tbody"><tr><td>Cargando datos locales…</td></tr></tbody></table></div><section class="card" style="margin-top:20px"><strong>Cómo leer este panel</strong><p>Los indicadores descriptivos resumen resultados históricos; no representan probabilidades garantizadas. Los datos y las licencias de cada proveedor deben revisarse antes de ofrecer el servicio comercialmente.</p><small id="source"></small></section></main><footer>Stolos Stats · MVP · Los datos pueden tener retrasos o cobertura incompleta.</footer><script>
-let sport='football',datasets={};const $=id=>document.getElementById(id);document.querySelectorAll('[data-sport]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-sport]').forEach(x=>x.classList.toggle('active',x===b));sport=b.dataset.sport;render()});$('season').onchange=render;
-async function load(){for(const s of ['football','nfl']){try{const r=await fetch(`data/${s}.json?ts=${Date.now()}`);if(r.ok)datasets[s]=await r.json()}catch(e){}}render()}
-function render(){const d=datasets[sport];$('tabletitle').textContent=sport==='football'?'Resultados históricos de fútbol':'Resultados históricos de NFL';$('source').textContent=d?`Fuente: ${d.source||'no especificada'} · Archivo generado: ${d.generated_at||'fecha no disponible'}`:'Aún no hay archivo de datos. Ejecuta el importador o el flujo de GitHub Actions.';if(!d||!Array.isArray(d.games)){ $('matches').textContent='0';$('seasons').textContent='0';$('updated').textContent='Pendiente';$('thead').innerHTML='';$('tbody').innerHTML='<tr><td>Sin datos sincronizados. Consulta docs/INICIO_RAPIDO.md.</td></tr>';return}const games=d.games;const seasonSel=$('season');const old=seasonSel.value;seasonSel.innerHTML='<option value="all">Todas las temporadas</option>'+[...new Set(games.map(g=>String(g.season||'')).filter(Boolean))].sort().reverse().map(y=>`<option value="${y}">${y}</option>`).join('');if([...seasonSel.options].some(o=>o.value===old))seasonSel.value=old;const filtered=seasonSel.value==='all'?games:games.filter(g=>String(g.season)===seasonSel.value);$('matches').textContent=filtered.length.toLocaleString('es-MX');$('seasons').textContent=new Set(games.map(g=>g.season).filter(Boolean)).size;$('updated').textContent=d.generated_at?new Date(d.generated_at).toLocaleDateString('es-MX'):'—';const cols=sport==='football'?[['date','Fecha'],['league','Liga'],['home','Local'],['score','Marcador'],['away','Visitante']]:[['date','Fecha'],['season','Temporada'],['week','Semana'],['away','Visitante'],['score','Marcador'],['home','Local']];$('thead').innerHTML='<tr>'+cols.map(c=>`<th>${c[1]}</th>`).join('')+'</tr>';const rows=[...filtered].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,150);$('tbody').innerHTML=rows.map(g=>'<tr>'+cols.map(([k])=>`<td>${esc(k==='score'?(g.score||'—'):g[k]??'—')}</td>`).join('')+'</tr>').join('')||'<tr><td>No hay partidos para ese filtro.</td></tr>'}function esc(x){return String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}load();
-</script></body></html>
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stolos Stats | Fútbol + NFL</title>
+<style>
+:root{color-scheme:dark;--bg:#090d14;--panel:#111925;--line:#263344;--text:#edf3fb;--muted:#93a4b9;--accent:#77e0b5}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#142235 0,#090d14 55%);font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;color:var(--text)}
+header,main,footer{max-width:1120px;margin:auto;padding:24px}header{display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid var(--line)}
+.logo{font-size:1.5rem;font-weight:850;letter-spacing:.08em}.logo span{color:var(--accent)}.status{font-size:.85rem;color:var(--muted)}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin:24px 0}button{cursor:pointer;background:#172435;color:var(--text);border:1px solid var(--line);padding:10px 16px;border-radius:10px;font-weight:700}button.active,button:hover{background:var(--accent);color:#062117;border-color:var(--accent)}
+.hero{padding:28px;border:1px solid var(--line);border-radius:20px;background:linear-gradient(135deg,#121e2d,#0d141e);margin-bottom:20px}.eyebrow{color:var(--accent);text-transform:uppercase;letter-spacing:.15em;font-size:.75rem;font-weight:800}h1{font-size:clamp(2rem,5vw,3.6rem);line-height:1.06;margin:.4rem 0 1rem}.hero p,.muted{color:var(--muted)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin:20px 0}.card,.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}.metric{font-size:2rem;font-weight:850}.label{color:var(--muted);font-size:.9rem}
+.panel h2{margin-top:0}.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.table-wrap{overflow:auto}table{border-collapse:collapse;width:100%;min-width:580px}th,td{text-align:left;padding:12px;border-bottom:1px solid var(--line)}th{color:var(--muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.07em}td.score{font-weight:800;color:var(--accent)}.notice{padding:12px 14px;border:1px solid var(--line);border-radius:10px;color:var(--muted);margin:16px 0}.tag{display:inline-block;border:1px solid var(--line);padding:4px 8px;border-radius:999px;font-size:.78rem;color:var(--accent)}footer{color:var(--muted);font-size:.85rem;border-top:1px solid var(--line);margin-top:36px}
+@media(max-width:600px){header{align-items:flex-start;flex-direction:column;padding:18px}main,footer{padding:18px}.hero{padding:20px}}
+</style>
+</head>
+<body>
+<header><div class="logo">STOLOS <span>STATS</span></div><div class="status" id="status">Preparado para cargar datos históricos</div></header>
+<main>
+<section class="hero"><div class="eyebrow">Datos deportivos · Panel inicial</div><h1>Estadísticas para analizar el juego.</h1><p>Resultados históricos de fútbol y NFL en un solo lugar. Datos informativos; no garantizan resultados deportivos.</p><span class="tag" id="updated">Actualización: pendiente de datos</span></section>
+<nav aria-label="Deporte"><button class="active" data-sport="football">Fútbol</button><button data-sport="nfl">NFL</button></nav>
+<section class="cards">
+<div class="card"><div class="label">Partidos cargados</div><div class="metric" id="games">—</div></div>
+<div class="card"><div class="label">Equipos identificados</div><div class="metric" id="teams">—</div></div>
+<div class="card"><div class="label">Fuente de datos</div><div class="metric" style="font-size:1.25rem" id="source">—</div></div>
+</section>
+<section class="panel"><div class="toolbar"><h2 id="tableTitle">Resultados históricos de fútbol</h2><span class="muted" id="shown">Esperando datos…</span></div><div id="notice" class="notice">Si aún no aparecen datos, revisa que la actualización automática haya generado los archivos JSON.</div><div class="table-wrap"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div></section>
+</main>
+<footer>Stolos Stats · Proyecto en desarrollo. Los datos pueden tener retrasos o limitaciones de licencia. No es asesoría de apuestas.</footer>
+<script>
+let sport='football', datasets={};
+const $=id=>document.getElementById(id);
+document.querySelectorAll('[data-sport]').forEach(b=>b.addEventListener('click',()=>{sport=b.dataset.sport;document.querySelectorAll('[data-sport]').forEach(x=>x.classList.toggle('active',x===b));render()}));
+async function load(){
+ let errors=[];
+ for(const s of ['football','nfl']){
+  try{const r=await fetch(`data/${s}.json?ts=${Date.now()}`);if(!r.ok)throw Error('Archivo no disponible');datasets[s]=await r.json();}
+  catch(e){errors.push(s);}
+ }
+ try{const r=await fetch(`data/last_updated.json?ts=${Date.now()}`);if(r.ok){const d=await r.json();$('updated').textContent='Actualizado: '+(d.updated_at||'fecha no disponible');}}catch(e){}
+ $('status').textContent=errors.length?'Algunos datos todavía no están disponibles':'Datos cargados';
+ render();
+}
+function rowsFor(d){if(Array.isArray(d))return d;if(d&&Array.isArray(d.matches))return d.matches;if(d&&Array.isArray(d.games))return d.games;if(d&&Array.isArray(d.results))return d.results;return []}
+function render(){
+ const d=datasets[sport], rows=rowsFor(d||{});$('tableTitle').textContent=sport==='football'?'Resultados históricos de fútbol':'Resultados históricos de NFL';
+ $('games').textContent=d?rows.length.toLocaleString('es-MX'):'—';
+ const set=new Set();rows.forEach(r=>{['home_team','away_team','HomeTeam','AwayTeam','home','away','team_home','team_away'].forEach(k=>{if(r[k])set.add(r[k])})});$('teams').textContent=d?set.size.toLocaleString('es-MX'):'—';
+ $('source').textContent=d?(d.source|| (sport==='football'?'Football-Data':'nflverse')):'Pendiente';
+ $('shown').textContent=rows.length?`Mostrando ${Math.min(rows.length,50)} de ${rows.length}`:'Sin resultados cargados';
+ $('notice').textContent=rows.length?'Los registros provienen del archivo histórico importado. Comprueba la fuente y su licencia antes de usar los datos comercialmente.':'No se encontraron registros. Primero debe funcionar el flujo de importación de datos.';
+ const football=sport==='football';
+ $('thead').innerHTML=football?'<tr><th>Fecha</th><th>Liga/temporada</th><th>Local</th><th>Marcador</th><th>Visitante</th></tr>':'<tr><th>Fecha</th><th>Temporada</th><th>Visitante</th><th>Marcador</th><th>Local</th></tr>';
+ const val=(r,keys)=>{for(const k of keys)if(r[k]!==undefined&&r[k]!==null&&r[k]!=='')return r[k];return '—'};
+ $('tbody').innerHTML=rows.slice(0,50).map(r=>{
+  const date=val(r,['date','Date','game_date','gameday']),season=val(r,['season','Season','league','Div']),home=val(r,['home_team','HomeTeam','home','team_home','home_team_name']),away=val(r,['away_team','AwayTeam','away','team_away','away_team_name']),hs=val(r,['home_score','FTHG','home_points','home_score_final']),as=val(r,['away_score','FTAG','away_points','away_score_final']);
+  return `<tr><td>${esc(date)}</td><td>${esc(season)}</td><td>${esc(football?home:away)}</td><td class="score">${esc(as==='—'||hs==='—'?'—':football?hs+' - '+as:as+' - '+hs)}</td><td>${esc(football?away:home)}</td></tr>`
+ }).join('');
+}
+function esc(x){return String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+load();
+</script>
+</body></html>

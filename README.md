@@ -1,16 +1,22 @@
-# Stolos Stats — Fútbol + NFL (starter)
+# Stolos Stats — Fútbol + NFL
 
-Incluye una página inicial, importador Python y GitHub Actions diario.
+Panel web estático con diseño oscuro y carga de archivos JSON históricos.
 
-## Contenido
-- `index.html`: panel visual inicial.
-- `scripts/update_data.py`: descarga CSV de resultados históricos de Premier League y datos de partidos de NFL.
-- `.github/workflows/daily-update.yml`: ejecución diaria y ejecución manual.
-- `data/`: aquí se guardan los JSON generados por el importador.
-- `docs/INICIO_RAPIDO.md`: instrucciones para subir el proyecto.
+## Archivos
+- `index.html`: panel web.
+- `scripts/update_data.py`: importador de datos.
+- `.github/workflows/daily-update.yml`: actualización diaria y ejecución manual.
+- `data/`: aquí se generan `football.json`, `nfl.json` y `last_updated.json`.
 
-## Importante
-Este es un punto de partida, no una plataforma comercial terminada. Football-Data.co.uk indica que sus datos gratuitos son para uso privado y no para productos comerciales; consigue autorización/licencia comercial o sustituye esa fuente antes de vender suscripciones basadas en sus datos. Revisa también los términos de nflverse. La página inicial todavía requiere conectar los JSON para mostrarlos y no incluye pagos ni cuentas de suscripción.
+## Instalar en GitHub
+1. Descarga y descomprime el ZIP.
+2. En tu repositorio, usa **Add file → Upload files** y sube el contenido de la carpeta `stolos-stats` (incluida `.github`, habilitando archivos ocultos si es necesario).
+3. Confirma el commit.
+4. Abre **Actions → Daily Update → Run workflow** y revisa los registros del paso **Download historical sports data**.
+5. Si termina bien, verifica que existan los tres JSON dentro de `data`.
 
-## Actualización
-GitHub Actions intenta ejecutarse diariamente a las 12:17 UTC y permite ejecución manual desde Actions → Daily Update → Run workflow. GitHub puede retrasar tareas programadas. La primera ejecución descargará los datos y los guardará en `data/`.
+## Publicar la web
+En GitHub, entra a **Settings → Pages**. Selecciona **Deploy from a branch**, rama `main`, carpeta `/(root)` y guarda. La URL se mostrará en esa pantalla al terminar la publicación.
+
+## Límites importantes
+Este es un MVP inicial, no una plataforma completa de apuestas ni un sistema de predicciones. No incluye cuentas, pagos ni suscripciones. Las fuentes de datos pueden cambiar o fallar. Football-Data.co.uk limita el uso comercial de sus datos; no monetices ni redistribuyas esos datos sin verificar y obtener los permisos necesarios. Revisa también los términos de nflverse. Para un producto comercial, sustituye las fuentes por un proveedor con licencia adecuada.

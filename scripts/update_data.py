@@ -1,88 +1,77 @@
 #!/usr/bin/env python3
-"""Stolos Stats starter importer: historical soccer scores and NFL schedules/results."""
-import csv, io, json, urllib.request
+"""Importa datos públicos históricos para un MVP de Stolos Stats."""
+import csv, io, json, os, urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
+
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "data"
 OUT.mkdir(exist_ok=True)
-UA = {"User-Agent": "StolosStats/1.0 (sports data importer)"}
+UA = "StolosStats/1.0 (historical-data-import)"
 
-def download(url, timeout=60):
-    req = urllib.request.Request(url, headers=UA)
-    with urllib.request.urlopen(req, timeout=timeout) as response:
+def get_text(url):
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    with urllib.request.urlopen(req, timeout=45) as response:
         return response.read().decode("utf-8-sig", errors="replace")
 
-def write_json(filename, sport, source, games):
-    payload = {"sport": sport, "source": source, "generated_at": datetime.now(timezone.utc).isoformat(), "game_count": len(games), "games": games}
-    (OUT / filename).write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"{filename}: guardados {len(games)} registros")
+def save_json(name, data):
+    (OUT / name).write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
-def import_football():
-    games = []
-    # Premier League seasons 2019/20 through 2025/26; only public CSVs that respond are imported.
-    for start in range(19, 26):
-        season_code = f"{start:02d}{(start + 1) % 100:02d}"
-        url = f"https://www.football-data.co.uk/mmz4281/{season_code}/E0.csv"
+def football_import():
+    all_rows=[]
+    # English Premier League (E0) season files; public results data.
+    seasons=["1920","2021","2122","2223","2324","2425","2526"]
+    for season in seasons:
+        url=f"https://www.football-data.co.uk/mmz4281/{season}/E0.csv"
         try:
-            reader = csv.DictReader(io.StringIO(download(url)))
+            text=get_text(url)
+            reader=csv.DictReader(io.StringIO(text))
+            count=0
             for row in reader:
-                home = (row.get("HomeTeam") or "").strip()
-                away = (row.get("AwayTeam") or "").strip()
-                if not home or not away:
-                    continue
-                raw_date = (row.get("Date") or "").strip()
-                parsed_date = raw_date
-                for fmt in ("%d/%m/%y", "%d/%m/%Y", "%Y-%m-%d"):
-                    try:
-                        parsed_date = datetime.strptime(raw_date, fmt).date().isoformat()
-                        break
-                    except ValueError:
-                        pass
-                hg, ag = (row.get("FTHG") or "").strip(), (row.get("FTAG") or "").strip()
-                games.append({"date": parsed_date, "season": f"20{season_code[:2]}/20{season_code[2:]}", "league": "Premier League", "home": home, "away": away, "home_goals": int(hg) if hg.isdigit() else None, "away_goals": int(ag) if ag.isdigit() else None, "result": (row.get("FTR") or "").strip()})
-            print(f"Fútbol {season_code}: OK")
+                home=row.get("HomeTeam",""); away=row.get("AwayTeam","")
+                if not home or not away: continue
+                all_rows.append({
+                    "date":row.get("Date",""),"season":season,"league":"Premier League",
+                    "home_team":home,"away_team":away,
+                    "home_score":row.get("FTHG",""),"away_score":row.get("FTAG",""),
+                    "result":row.get("FTR","")
+                }); count+=1
+            print(f"Fútbol {season}: {count} registros")
         except Exception as exc:
-            print(f"AVISO: fútbol {season_code} no disponible: {exc}")
-    if not games:
-        raise RuntimeError("No se pudo descargar ningún partido de fútbol; revisa la fuente o conexión.")
-    write_json("football.json", "Fútbol", "Football-Data.co.uk / Premier League E0. Datos gratuitos para uso privado/investigación; confirmar permiso comercial antes de vender acceso a estos datos.", games)
+            print(f"Aviso: no se pudo importar fútbol temporada {season}: {exc}")
+    if not all_rows:
+        raise RuntimeError("No se pudo descargar ningún resultado de fútbol.")
+    save_json("football.json", {"source":"Football-Data.co.uk","competition":"English Premier League","records":len(all_rows),"matches":all_rows})
 
-def import_nfl():
-    # nflverse publishes its schedule/game data through its GitHub data repository.
-    urls = [
-        "https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv",
-        "https://raw.githubusercontent.com/nflverse/nfldata/master/data/schedules.csv",
-    ]
-    last_error = None
-    for url in urls:
-        try:
-            text = download(url)
-            reader = csv.DictReader(io.StringIO(text))
-            rows = list(reader)
-            if not rows:
-                raise RuntimeError("CSV vacío")
-            games = []
-            for row in rows:
-                home = (row.get("home_team") or row.get("home_team_abbr") or "").strip()
-                away = (row.get("away_team") or row.get("away_team_abbr") or "").strip()
-                if not home or not away:
-                    continue
-                date = (row.get("gameday") or row.get("game_date") or row.get("game_date_time") or "").strip()
-                hs = (row.get("home_score") or "").strip()
-                aws = (row.get("away_score") or "").strip()
-                games.append({"date": date, "season": row.get("season", ""), "week": row.get("week", ""), "home": home, "away": away, "home_score": int(hs) if hs.isdigit() else None, "away_score": int(aws) if aws.isdigit() else None})
-            if not games:
-                raise RuntimeError("No se reconocieron filas de partidos en el CSV")
-            write_json("nfl.json", "NFL", "nflverse / nfldata. Revisar licencia, atribución y términos de uso de la fuente.", games)
-            return
+def nfl_import():
+    # nflverse provides game-level schedules/results CSVs.
+    url="https://github.com/nflverse/nfldata/raw/master/data/games.csv"
+    text=get_text(url)
+    reader=csv.DictReader(io.StringIO(text))
+    rows=[]
+    for r in reader:
+        home=r.get("home_team",""); away=r.get("away_team","")
+        if not home or not away: continue
+        rows.append({
+            "date":r.get("gameday",""),"season":r.get("season",""),
+            "week":r.get("week",""),"home_team":home,"away_team":away,
+            "home_score":r.get("home_score",""),"away_score":r.get("away_score",""),
+            "game_type":r.get("game_type","")
+        })
+    if not rows: raise RuntimeError("El archivo de NFL no devolvió partidos.")
+    save_json("nfl.json", {"source":"nflverse","records":len(rows),"games":rows})
+
+def main():
+    errors=[]
+    for label, fn in [("fútbol",football_import),("NFL",nfl_import)]:
+        try: fn()
         except Exception as exc:
-            last_error = exc
-            print(f"AVISO: fuente NFL no disponible ({url}): {exc}")
-    raise RuntimeError(f"No se pudo importar la fuente de NFL: {last_error}")
+            errors.append(f"{label}: {exc}")
+            print(f"ERROR {label}: {exc}")
+    save_json("last_updated.json", {"updated_at":datetime.now(timezone.utc).isoformat(),"errors":errors,"status":"partial" if errors else "success"})
+    if errors:
+        raise SystemExit("Falló una o más importaciones: " + " | ".join(errors))
+    print("Importación completada correctamente.")
 
 if __name__ == "__main__":
-    import_football()
-    import_nfl()
-    (OUT / "last_updated.json").write_text(json.dumps({"updated_at": datetime.now(timezone.utc).isoformat(), "status": "success"}, indent=2), encoding="utf-8")
-    print("Importación terminada.")
+    main()
