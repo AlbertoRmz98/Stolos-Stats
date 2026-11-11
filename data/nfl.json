@@ -74076,16 +74076,6 @@
       "date": "2026-11-08",
       "season": "2026",
       "week": "9",
-      "home_team": "SF",
-      "away_team": "LV",
-      "home_score": "38",
-      "away_score": "17",
-      "game_type": "REG"
-    },
-    {
-      "date": "2026-11-08",
-      "season": "2026",
-      "week": "9",
       "home_team": "NE",
       "away_team": "GB",
       "home_score": "27",
@@ -74100,6 +74090,16 @@
       "away_team": "ARI",
       "home_score": "17",
       "away_score": "3",
+      "game_type": "REG"
+    },
+    {
+      "date": "2026-11-08",
+      "season": "2026",
+      "week": "9",
+      "home_team": "SF",
+      "away_team": "LV",
+      "home_score": "38",
+      "away_score": "17",
       "game_type": "REG"
     },
     {
