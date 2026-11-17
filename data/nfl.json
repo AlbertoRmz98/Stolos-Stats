@@ -74258,8 +74258,8 @@
       "week": "10",
       "home_team": "BAL",
       "away_team": "LAC",
-      "home_score": "",
-      "away_score": "",
+      "home_score": "20",
+      "away_score": "23",
       "game_type": "REG"
     },
     {
@@ -74456,16 +74456,6 @@
       "date": "2026-11-29",
       "season": "2026",
       "week": "12",
-      "home_team": "CLE",
-      "away_team": "LV",
-      "home_score": "",
-      "away_score": "",
-      "game_type": "REG"
-    },
-    {
-      "date": "2026-11-29",
-      "season": "2026",
-      "week": "12",
       "home_team": "HOU",
       "away_team": "BAL",
       "home_score": "",
@@ -74478,6 +74468,16 @@
       "week": "12",
       "home_team": "IND",
       "away_team": "NYG",
+      "home_score": "",
+      "away_score": "",
+      "game_type": "REG"
+    },
+    {
+      "date": "2026-11-29",
+      "season": "2026",
+      "week": "12",
+      "home_team": "JAX",
+      "away_team": "TEN",
       "home_score": "",
       "away_score": "",
       "game_type": "REG"
@@ -74506,8 +74506,8 @@
       "date": "2026-11-29",
       "season": "2026",
       "week": "12",
-      "home_team": "JAX",
-      "away_team": "TEN",
+      "home_team": "LAC",
+      "away_team": "NE",
       "home_score": "",
       "away_score": "",
       "game_type": "REG"
@@ -74536,8 +74536,8 @@
       "date": "2026-11-29",
       "season": "2026",
       "week": "12",
-      "home_team": "LAC",
-      "away_team": "NE",
+      "home_team": "CLE",
+      "away_team": "LV",
       "home_score": "",
       "away_score": "",
       "game_type": "REG"
